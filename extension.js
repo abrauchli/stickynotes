@@ -32,11 +32,7 @@ function _showHello() {
 */
 
 function init() {
-	stickyNotesPaneActor = new St.Bin({ //x_align: St.Align.START,
-				 //y_align: St.Align.START,
-				 x_fill: true,
-				 y_fill: true,
-				 style_class: 'view-tab-page' });
+	stickyNotesPaneActor = new St.Bin();
 	/*
 	title = new St.Bin({ style_class: 'panel-button',
 						  reactive: true,
@@ -46,8 +42,6 @@ function init() {
 						  track_hover: true });
 
 	*/
-	//button.set_child(icon);
-	//button.connect('button-press-event', _showHello);
 }
 
 function enable() {
@@ -83,20 +77,37 @@ const StickyNote = new Lang.Class({
 		this.cursorpos = 0;
 
 		this._note = new St.Entry({
-			text: "Foo note\nBar line"
+			text: "Foo note\nBar line",
+			style_class: 'note-text',
+			track_hover: true
 		});
 		this._btnClose = new St.Button({
-			label: 'X'
+			label: 'X',
+			opacity: 0
 		});
-		this._noteActor = new Clutter.Actor();
-		this._noteActor.set_opacity(0);
+		this._note.connect('enter-event', Lang.bind(this, this._showCloseButton));
+		this._note.connect('leave-event', Lang.bind(this, this._hideCloseButton));
 
-		this._noteActor.add_actor(this._note, {});
-		this._noteActor.add_actor(this._btnClose, {});
-		this._note.set_position(0, 20);
-		this._btnClose.set_position(50, 0);
+		this._noteFrameActor = new St.Bin({ style_class: 'note' });
+		this._noteFrameActor.set_opacity(0);
+
+		this._noteFrameActor.add_actor(this._note);
+		this._note.add_actor(this._btnClose);
+		this._btnClose.set_position(100, 0);
 
 		this._btnClose.connect('clicked', Lang.bind(this, this.destroy));
+	},
+	_tweenCloseButton: function(hide) {
+		Tweener.addTween(this._btnClose,
+						 { opacity: (hide ? 0 : 200),
+						   time: 0.1,
+						   transition: 'easeOutQuad' });
+	},
+	_showCloseButton: function() {
+		this._tweenCloseButton(false);
+	},
+	_hideCloseButton: function() {
+		this._tweenCloseButton(true);
 	},
 
 	destroy: function() {
@@ -104,18 +115,18 @@ const StickyNote = new Lang.Class({
 		// remove data
 	},
 	show: function() {
-		stickyNotesPaneActor.add_actor(this._noteActor);
-		stickyNotesPaneActor.set_position(300, 300);
+		stickyNotesPaneActor.add_actor(this._noteFrameActor);
+		this._noteFrameActor.set_position(300, 300);
 
 		this.visible = true;
-		Tweener.addTween(this._noteActor,
+		Tweener.addTween(this._noteFrameActor,
 						 { opacity: 255,
 						   time: 0.1,
 						   transition: 'easeOutQuad' });
 	},
 	hide: function() {
 
-		Tweener.addTween(this._noteActor,
+		Tweener.addTween(this._noteFrameActor,
 						 { opacity: 0,
 						   time: 0.1,
 						   transition: 'easeOutQuad',
