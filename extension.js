@@ -81,33 +81,29 @@ const StickyNote = new Lang.Class({
 			style_class: 'note-text',
 			track_hover: true
 		});
+		this._note.get_clutter_text().set_single_line_mode(false);
 		this._btnClose = new St.Button({
 			label: 'X',
-			opacity: 0
+			opacity: 20
+			//x_align: St.Align.END,
+			//y_align: St.Align.START
 		});
-		this._note.connect('enter-event', Lang.bind(this, this._showCloseButton));
-		this._note.connect('leave-event', Lang.bind(this, this._hideCloseButton));
+		this._note.connect('notify::hover', Lang.bind(this, this._tweenCloseButton));
 
 		this._noteFrameActor = new St.Bin({ style_class: 'note' });
 		this._noteFrameActor.set_opacity(0);
 
 		this._noteFrameActor.add_actor(this._note);
-		this._note.add_actor(this._btnClose);
+		this._note.set_secondary_icon(this._btnClose);
 		this._btnClose.set_position(100, 0);
 
 		this._btnClose.connect('clicked', Lang.bind(this, this.destroy));
 	},
-	_tweenCloseButton: function(hide) {
+	_tweenCloseButton: function() {
 		Tweener.addTween(this._btnClose,
-						 { opacity: (hide ? 0 : 200),
+						 { opacity: (this._note.hover ? 200 : 20),
 						   time: 0.1,
 						   transition: 'easeOutQuad' });
-	},
-	_showCloseButton: function() {
-		this._tweenCloseButton(false);
-	},
-	_hideCloseButton: function() {
-		this._tweenCloseButton(true);
 	},
 
 	destroy: function() {
