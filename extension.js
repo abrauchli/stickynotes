@@ -6,50 +6,16 @@ const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
 const VIEW_TAB_ID = 'stickynotes';
 
-let stickyNotesPaneActor;
-/*
-let text, button;
-
-function _showHello() {
-	if (!text) {
-		text = new St.Label({ style_class: 'helloworld-label', text: "Hello, world!" });
-		Main.uiGroup.add_actor(text);
-	}
-
-	text.opacity = 255;
-
-	let monitor = Main.layoutManager.primaryMonitor;
-
-	text.set_position(Math.floor(monitor.width / 2 - text.width / 2),
-					  Math.floor(monitor.height / 2 - text.height / 2));
-
-	Tweener.addTween(text,
-					 { opacity: 0,
-					   time: 2,
-					   transition: 'easeOutQuad',
-					   onComplete: _hideHello });
-}
-*/
+let stickyNotesManager;
 
 function init() {
-	stickyNotesPaneActor = new St.Bin();
-	/*
-	title = new St.Bin({ style_class: 'panel-button',
-						  reactive: true,
-						  can_focus: true,
-						  x_fill: true,
-						  y_fill: false,
-						  track_hover: true });
-
-	*/
+	stickyNotesManager = new StickyNotesManager();
 }
 
 function enable() {
 	var a11yIcon = null;
 	// new St.Icon({ icon_type: St.IconType.FULLCOLOR, icon_size: pxheight, icon_name: ‘[icon name, without file extension]‘ });
-	Main.overview._viewSelector.addViewTab(VIEW_TAB_ID, "Sticky notes", stickyNotesPaneActor, a11yIcon);
-	var note = new StickyNote();
-	note.show();
+	Main.overview._viewSelector.addViewTab(VIEW_TAB_ID, "Sticky notes", stickyNotesManager.paneActor, a11yIcon);
 }
 
 function disable() {
@@ -68,64 +34,99 @@ const StickyNote = new Lang.Class({
 	Name: 'StickyNote',
 
 	_init: function() {
-		this.visible = false;
+		this.locked = false;
 		this.geometry = { x: 0, y: 0, w: 50, h: 50 };
 		this.title = null;
 		this.content = '';
-		this.created = new Date();
-		this.modified = new Date();
-		this.cursorpos = 0;
+		this.font = null;
+		this.fontColor = null;
+		this.color = null;
 
-		this._note = new St.Entry({
+		let layoutManager = new Clutter.BinLayout({
+			x_align: Clutter.BinAlignment.FIXED,
+			y_align: Clutter.BinAlignment.FIXED
+		});
+		this.widget = new Clutter.Actor();
+		this.widget.set_layout_manager(layoutManager);
+		this.widget.set_opacity(0);
+		this._noteFrameActor = new St.Bin({ style_class: 'note' });
+
+		this._noteActor = new St.Entry({
 			text: "Foo note\nBar line",
 			style_class: 'note-text',
 			track_hover: true
 		});
-		this._note.get_clutter_text().set_single_line_mode(false);
+		this._noteActor.get_clutter_text().set_single_line_mode(false);
+
 		this._btnClose = new St.Button({
 			label: 'X',
-			opacity: 20
-			//x_align: St.Align.END,
-			//y_align: St.Align.START
+			opacity: 20,
+			margin_top: 5.0,
+			margin_right: 5.0,
+			x_expand: true,
+			x_align: St.Align.END
 		});
-		this._note.connect('notify::hover', Lang.bind(this, this._tweenCloseButton));
-
-		this._noteFrameActor = new St.Bin({ style_class: 'note' });
-		this._noteFrameActor.set_opacity(0);
-
-		this._noteFrameActor.add_actor(this._note);
-		this._note.set_secondary_icon(this._btnClose);
-		this._btnClose.set_position(100, 0);
-
 		this._btnClose.connect('clicked', Lang.bind(this, this.destroy));
+		this._noteActor.connect('notify::hover', Lang.bind(this, this._tweenCloseButton));
+
+		this._noteFrameActor.add_actor(this._noteActor);
+		this.widget.add_actor(this._noteFrameActor);
+		this.widget.add_actor(this._btnClose);
+
 	},
 	_tweenCloseButton: function() {
 		Tweener.addTween(this._btnClose,
-						 { opacity: (this._note.hover ? 200 : 20),
+						 { opacity: (this._noteActor.hover ? 200 : 20),
 						   time: 0.1,
 						   transition: 'easeOutQuad' });
 	},
 
+	setPosition: function(x, y) {
+		this.widget.set_position(x, y);
+	},
 	destroy: function() {
 		this.hide();
-		// remove data
+		// TODO: remove data and inform the manager
 	},
 	show: function() {
-		stickyNotesPaneActor.add_actor(this._noteFrameActor);
-		this._noteFrameActor.set_position(300, 300);
-
-		this.visible = true;
-		Tweener.addTween(this._noteFrameActor,
+		Tweener.addTween(this.widget,
 						 { opacity: 255,
 						   time: 0.1,
 						   transition: 'easeOutQuad' });
 	},
-	hide: function() {
-
-		Tweener.addTween(this._noteFrameActor,
+	hide: function(cb) {
+		Tweener.addTween(this.widget,
 						 { opacity: 0,
 						   time: 0.1,
 						   transition: 'easeOutQuad',
-						   onComplete: Lang.bind(this, function() { this.visible = false; }) });
+						   onComplete: cb });
+	}
+});
+
+const StickyNotesManager = new Lang.Class({
+	Name: 'StickyNotesManager',
+
+	_init: function(stickyNotesPaneActor) {
+		this.paneActor = new St.Bin();
+		this.notes = [];
+
+		this.createNote();
+	},
+
+	addNote: function(note) {
+		this.paneActor.add_actor(note.widget);
+		note.setPosition(300, 300);
+		note.show();
+	},
+	removeNote: function(note) {
+		note.hide(
+			Lang.bind(this,
+				function() { this.paneActor.remove_actor(note.widget); })
+		);
+	},
+	createNote: function() {
+		let note = new StickyNote();
+		this.notes.push(note);
+		this.addNote(note);
 	}
 });
