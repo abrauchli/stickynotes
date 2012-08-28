@@ -87,22 +87,23 @@ const StickyNote = new Lang.Class({
 		this.widget.connect('leave-event', Lang.bind(this, this._tweenCloseButton));
 
 	},
-	_startDrag: function(evt) {
-		log('start '+evt.x+' '+evt.y);
-		this._drag_orig = {x: evt.x, y: evt.y };
+	_startDrag: function(actor, evt) {
+		let [x, y] = evt.get_coords();
+		let [res, nx, ny] = this.widget.transform_stage_point(x, y);
+		this._drag_orig = {x: nx, y: ny };
 		this._handlerId = this.widget.connect('motion-event', Lang.bind(this, this._drag));
 		return true;
 	},
-	_drag: function(evt) {
-		log('drag '+evt.x+' '+evt.y);
+	_drag: function(actor, evt) {
+		let [x, y] = evt.get_coords();
+		let [res, nx, ny] = this.widget.transform_stage_point(x, y);
 		if (!this._drag_orig) {
 			return false;
 		}
-		this.widget.move_by(evt.x - this._drag_orig.x, evt.y - this._drag_orig.y);
+		this.widget.move_by(nx - this._drag_orig.x, ny - this._drag_orig.y);
 		return true;
 	},
-	_endDrag: function(evt) {
-		log('end '+evt.x+' '+evt.y);
+	_endDrag: function(actor, evt) {
 		if (!this._drag_orig) {
 			return false;
 		}
@@ -149,8 +150,8 @@ const StickyNotesManager = new Lang.Class({
 			y_align: Clutter.BinAlignment.FIXED
 		});
 		this.paneActor = new Clutter.Actor({
-			layout_manager: layoutManager,
-			reactive: true
+			//layout_manager: layoutManager,
+			//reactive: true
 		});
 
 		this.notes = [];
@@ -169,8 +170,8 @@ const StickyNotesManager = new Lang.Class({
 	},
 
 	addNote: function(note) {
+		//Main.uiGroup.add_actor(note.widget); // add directly to screen
 		this.paneActor.add_actor(note.widget);
-		note.setPosition(300, 300);
 		note.show();
 	},
 	removeNote: function(note) {
@@ -182,7 +183,7 @@ const StickyNotesManager = new Lang.Class({
 	createNote: function() {
 		let note = new StickyNote();
 		note.setPosition(this.pos_x, 0);
-		this.pos_x += 120;
+		this.pos_x += 140;
 		this.notes.push(note);
 		this.addNote(note);
 	}
