@@ -3,6 +3,7 @@ const Clutter = imports.gi.Clutter;
 const Lang = imports.lang;
 const St = imports.gi.St;
 const Main = imports.ui.main;
+const Pango = imports.gi.Pango;
 const Tweener = imports.ui.tweener;
 const VIEW_TAB_ID = 'stickynotes';
 
@@ -36,7 +37,7 @@ const StickyNote = new Lang.Class({
 	_init: function() {
 		this.locked = false;
 		this.position = null;
-		this.size = {width: 100, height: 100};
+		this.size = {width: 300, height: 300};
 		this.title = null;
 		this.content = '';
 		this.font = null;
@@ -44,6 +45,10 @@ const StickyNote = new Lang.Class({
 		this.color = null;
 
 		this.widget = new Clutter.Actor({
+			layout_manager: new Clutter.BinLayout({
+				x_align: Clutter.BinAlignment.START,
+				y_align: Clutter.BinAlignment.START
+			}),
 			opacity: 0,
 			reactive: true,
 			width: this.size.width,
@@ -52,23 +57,38 @@ const StickyNote = new Lang.Class({
 		if (this.position) {
 			this.widget.position = position;
 		}
-		this._noteFrameActor = new St.Bin({ style_class: 'note' });
-
-		this._noteActor = new St.Entry({
-			text: "Foo note\nBar line",
-			style_class: 'note-text'
+		this._noteFrameActor = new St.Bin({
+			style_class: 'note'
 		});
-		this._noteActor.get_clutter_text().set_single_line_mode(false);
+
+		this._fontDescription = new Pango.FontDescription();
+		this._fontDescription.set_family('Sans');
+		this._fontDescription.set_size(12 * Pango.SCALE);
+		this._fontDescription.set_weight(Pango.Weight.BOLD);
+		this._noteActor = new Clutter.Text({
+			activatable: false,
+			cursor_size: 10,
+			editable: true,
+			font_description: this._fontDescription,
+			line_wrap: true,
+			single_line_mode: false,
+			text: "Foo note\nBar line"
+		});
+		// this._noteActor.connect('button-release-event', function(act,evt) {
+		// 	act.grab_key_focus();
+		// });
 
 		this._btnClose = new St.Button({
+			constraints: new Clutter.AlignConstraint(this.widget, Clutter.AlignAxis.X_AXIS, 1.0),
 			label: 'X',
 			opacity: 20,
 			margin_top: 5.0,
 			margin_right: 5.0,
 			//x_expand: true,
-			x_align: St.Align.END,
+			//x_align: St.Align.END,
 			z_position: 1
 		});
+		this._btnClose.add_constraint(new Clutter.AlignConstraint(this.widget, Clutter.AlignAxis.Y_AXIS, 0.0));
 		this._btnClose.connect('clicked', Lang.bind(this, this.destroy));
 
 		this._noteFrameActor.add_actor(this._noteActor);
@@ -183,7 +203,7 @@ const StickyNotesManager = new Lang.Class({
 	createNote: function() {
 		let note = new StickyNote();
 		note.setPosition(this.pos_x, 0);
-		this.pos_x += 140;
+		this.pos_x += 340;
 		this.notes.push(note);
 		this.addNote(note);
 	}
