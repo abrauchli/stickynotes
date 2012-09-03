@@ -1,10 +1,12 @@
+const Lang = imports.lang;
 
 const Clutter = imports.gi.Clutter;
-const Lang = imports.lang;
 const St = imports.gi.St;
-const Main = imports.ui.main;
 const Pango = imports.gi.Pango;
+
+const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
+
 const VIEW_TAB_ID = 'stickynotes';
 
 let stickyNotesManager;
@@ -65,6 +67,13 @@ const StickyNote = new Lang.Class({
 		this._fontDescription.set_family('Sans');
 		this._fontDescription.set_size(12 * Pango.SCALE);
 		this._fontDescription.set_weight(Pango.Weight.BOLD);
+		this._noteActor = new St.Entry({
+			text: "Foo note\nBar line"
+		});
+		let clutter_text = this._noteActor.clutter_text;
+		clutter_text.set_single_line_mode(false);
+		clutter_text.set_font_description(this._fontDescription);
+		/*
 		this._noteActor = new Clutter.Text({
 			activatable: false,
 			cursor_size: 10,
@@ -74,6 +83,7 @@ const StickyNote = new Lang.Class({
 			single_line_mode: false,
 			text: "Foo note\nBar line"
 		});
+		*/
 		// this._noteActor.connect('button-release-event', function(act,evt) {
 		// 	act.grab_key_focus();
 		// });
@@ -103,8 +113,9 @@ const StickyNote = new Lang.Class({
 
 		this.widget.connect('button-press-event', Lang.bind(this, this._startDrag));
 		this.widget.connect('button-release-event', Lang.bind(this, this._endDrag));
-		this.widget.connect('enter-event', Lang.bind(this, this._tweenCloseButton));
-		this.widget.connect('leave-event', Lang.bind(this, this._tweenCloseButton));
+
+		this.widget.connect('enter-event', Lang.bind(this, this._enterLeaveEvent));
+		this.widget.connect('leave-event', Lang.bind(this, this._enterLeaveEvent));
 
 	},
 	_startDrag: function(actor, evt) {
@@ -132,11 +143,15 @@ const StickyNote = new Lang.Class({
 		delete this._drag_orig;
 		return true;
 	},
-	_tweenCloseButton: function(act, evt, data) {
+	_enterLeaveEvent: function(act, evt, data) {
+		let enter = evt.type() === Clutter.EventType.ENTER;
 		Tweener.addTween(this._btnClose,
-						 { opacity: (evt.type() === Clutter.EventType.ENTER ? 200 : 20),
+						 { opacity: (enter ? 200 : 20),
 						   time: 0.1,
 						   transition: 'easeOutQuad' });
+		if (enter) {
+			global.stage.set_key_focus(null);
+		}
 	},
 
 	setPosition: function(x, y) {
@@ -164,7 +179,7 @@ const StickyNote = new Lang.Class({
 const StickyNotesManager = new Lang.Class({
 	Name: 'StickyNotesManager',
 
-	_init: function(stickyNotesPaneActor) {
+	_init: function() {
 		let layoutManager = new Clutter.BinLayout({
 			x_align: Clutter.BinAlignment.FIXED,
 			y_align: Clutter.BinAlignment.FIXED
