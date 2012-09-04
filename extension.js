@@ -59,9 +59,6 @@ const StickyNote = new Lang.Class({
 		if (this.position) {
 			this.widget.position = position;
 		}
-		this._noteFrameActor = new St.Bin({
-			style_class: 'note'
-		});
 
 		this._fontDescription = new Pango.FontDescription();
 		this._fontDescription.set_family('Sans');
@@ -70,9 +67,15 @@ const StickyNote = new Lang.Class({
 		this._noteActor = new St.Entry({
 			text: "Foo note\nBar line"
 		});
-		let clutter_text = this._noteActor.clutter_text;
-		clutter_text.set_single_line_mode(false);
-		clutter_text.set_font_description(this._fontDescription);
+		let note_text = this._noteActor.clutter_text;
+		// note_text.set_background_color(new Clutter.Color({ red: 236, green: 248, blue: 51, alpha: 230 }));
+		note_text.set_single_line_mode(false);
+		note_text.set_line_wrap(true);
+		note_text.set_font_description(this._fontDescription);
+		note_text.set_margin(new Clutter.Margin({ left: 5, right: 5, top: 5, bottom: 5 }));
+		note_text.set_x_expand(true);
+		note_text.set_y_expand(true);
+		note_text.connect('key-press-event', Lang.bind(this, this._noteKeyPress));
 		/*
 		this._noteActor = new Clutter.Text({
 			activatable: false,
@@ -88,6 +91,14 @@ const StickyNote = new Lang.Class({
 		// 	act.grab_key_focus();
 		// });
 
+		this._noteFrameActor = new St.Bin({
+			child: this._noteActor,
+			//style_class: 'note',
+			x_fill: true,
+			y_fill: true
+		});
+		this._noteFrameActor.set_background_color(new Clutter.Color({ red: 236, green: 248, blue: 51, alpha: 230 }));
+
 		this._btnClose = new St.Button({
 			constraints: new Clutter.AlignConstraint(this.widget, Clutter.AlignAxis.X_AXIS, 1.0),
 			label: 'X',
@@ -101,7 +112,6 @@ const StickyNote = new Lang.Class({
 		this._btnClose.add_constraint(new Clutter.AlignConstraint(this.widget, Clutter.AlignAxis.Y_AXIS, 0.0));
 		this._btnClose.connect('clicked', Lang.bind(this, this.destroy));
 
-		this._noteFrameActor.add_actor(this._noteActor);
 		this.widget.add_actor(this._noteFrameActor);
 		this.widget.add_actor(this._btnClose);
 
@@ -152,6 +162,14 @@ const StickyNote = new Lang.Class({
 		if (enter) {
 			global.stage.set_key_focus(null);
 		}
+	},
+	_noteKeyPress: function(act, evt, data) {
+		let sym = evt.get_key_symbol();
+		if (sym == Clutter.Return || sym == Clutter.KP_Enter) {
+			act.insert_unichar('\n');
+			return true;
+		}
+		return false;
 	},
 
 	setPosition: function(x, y) {
