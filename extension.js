@@ -60,12 +60,25 @@ const StickyNote = new Lang.Class({
 			this.widget.position = position;
 		}
 
+		let titleFontDescription = new Pango.FontDescription();
+		titleFontDescription.set_family('Sans');
+		titleFontDescription.set_size(16 * Pango.SCALE);
+		titleFontDescription.set_weight(Pango.Weight.ULTRABOLD);
+		this._titleActor = new St.Entry({
+			text: "2012-08-28",
+			x_align: Clutter.ActorAlign.CENTER
+		});
+		let title_text = this._titleActor.clutter_text;
+		title_text.set_font_description(titleFontDescription);
+
 		this._fontDescription = new Pango.FontDescription();
 		this._fontDescription.set_family('Sans');
 		this._fontDescription.set_size(12 * Pango.SCALE);
 		this._fontDescription.set_weight(Pango.Weight.BOLD);
 		this._noteActor = new St.Entry({
-			text: "Foo note\nBar line"
+			text: "Foo note\nBar line",
+			x_expand: true,
+			y_expand: true
 		});
 		let note_text = this._noteActor.clutter_text;
 		// note_text.set_background_color(new Clutter.Color({ red: 236, green: 248, blue: 51, alpha: 230 }));
@@ -76,28 +89,18 @@ const StickyNote = new Lang.Class({
 		note_text.set_x_expand(true);
 		note_text.set_y_expand(true);
 		note_text.connect('key-press-event', Lang.bind(this, this._noteKeyPress));
-		/*
-		this._noteActor = new Clutter.Text({
-			activatable: false,
-			cursor_size: 10,
-			editable: true,
-			font_description: this._fontDescription,
-			line_wrap: true,
-			single_line_mode: false,
-			text: "Foo note\nBar line"
-		});
-		*/
-		// this._noteActor.connect('button-release-event', function(act,evt) {
-		// 	act.grab_key_focus();
-		// });
 
-		this._noteFrameActor = new St.Bin({
-			child: this._noteActor,
+		this._noteFrameActor = new St.BoxLayout({
 			//style_class: 'note',
-			x_fill: true,
-			y_fill: true
+			vertical: true,
+			x_align: St.Align.START,
+			y_align: St.Align.START,
+			x_expand: true,
+			y_expand: true
 		});
 		this._noteFrameActor.set_background_color(new Clutter.Color({ red: 236, green: 248, blue: 51, alpha: 230 }));
+		this._noteFrameActor.add_actor(this._titleActor);
+		this._noteFrameActor.add_actor(this._noteActor);
 
 		this._btnClose = new St.Button({
 			constraints: new Clutter.AlignConstraint(this.widget, Clutter.AlignAxis.X_AXIS, 1.0),
@@ -105,15 +108,13 @@ const StickyNote = new Lang.Class({
 			opacity: 20,
 			margin_top: 5.0,
 			margin_right: 5.0,
-			//x_expand: true,
-			//x_align: St.Align.END,
 			z_position: 1
 		});
-		this._btnClose.add_constraint(new Clutter.AlignConstraint(this.widget, Clutter.AlignAxis.Y_AXIS, 0.0));
+		this._btnClose.add_constraint(new Clutter.AlignConstraint({
+			factor: 1.0,
+			source: this._noteFrameActor
+		}));
 		this._btnClose.connect('clicked', Lang.bind(this, this.destroy));
-
-		this.widget.add_actor(this._noteFrameActor);
-		this.widget.add_actor(this._btnClose);
 
 		// Moving the note
 
@@ -123,6 +124,27 @@ const StickyNote = new Lang.Class({
 
 		this.widget.connect('button-press-event', Lang.bind(this, this._startDrag));
 		this.widget.connect('button-release-event', Lang.bind(this, this._endDrag));
+
+		// Resizing the note
+
+		let resizeHandleActor = new Clutter.Actor({
+			background_color: new Clutter.Color({ red: 0, green: 0, blue: 0, alpha: 230 }),
+			height: 20,
+			width: 20
+		});
+		let resizeDragAction = new Clutter.DragAction();
+		resizeHandleActor.add_action(resizeDragAction);
+		resizeHandleActor.add_constraint(new Clutter.AlignConstraint({
+			align_axis: Clutter.AlignAxis.BOTH,
+			factor: 1.0,
+			source: this._noteFrameActor
+		}));
+
+		this.widget.add_actor(this._noteFrameActor);
+		this.widget.add_actor(this._btnClose);
+		this.widget.add_actor(resizeHandleActor);
+
+		// Highlight the close button
 
 		this.widget.connect('enter-event', Lang.bind(this, this._enterLeaveEvent));
 		this.widget.connect('leave-event', Lang.bind(this, this._enterLeaveEvent));
