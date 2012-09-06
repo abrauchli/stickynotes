@@ -76,12 +76,14 @@ const StickyNote = new Lang.Class({
 		this._fontDescription.set_size(12 * Pango.SCALE);
 		this._fontDescription.set_weight(Pango.Weight.BOLD);
 		this._noteActor = new St.Entry({
+			stylable: false,
 			text: "Foo note\nBar line",
 			x_expand: true,
 			y_expand: true
 		});
 		let note_text = this._noteActor.clutter_text;
 		// note_text.set_background_color(new Clutter.Color({ red: 236, green: 248, blue: 51, alpha: 230 }));
+		note_text.set_color(new Clutter.Color({ red: 0, green: 0, blue: 0, alpha: 255 }));
 		note_text.set_single_line_mode(false);
 		note_text.set_line_wrap(true);
 		note_text.set_font_description(this._fontDescription);
@@ -93,22 +95,17 @@ const StickyNote = new Lang.Class({
 		this._noteFrameActor = new St.BoxLayout({
 			//style_class: 'note',
 			vertical: true,
-			x_align: St.Align.START,
-			y_align: St.Align.START,
 			x_expand: true,
 			y_expand: true
 		});
 		this._noteFrameActor.set_background_color(new Clutter.Color({ red: 236, green: 248, blue: 51, alpha: 230 }));
 		this._noteFrameActor.add_actor(this._titleActor);
 		this._noteFrameActor.add_actor(this._noteActor);
-
 		this._btnClose = new St.Button({
-			constraints: new Clutter.AlignConstraint(this.widget, Clutter.AlignAxis.X_AXIS, 1.0),
-			label: 'X',
-			opacity: 20,
 			margin_top: 5.0,
 			margin_right: 5.0,
-			z_position: 1
+			opacity: 20,
+			style_class: 'window-close'
 		});
 		this._btnClose.add_constraint(new Clutter.AlignConstraint({
 			factor: 1.0,
@@ -181,7 +178,7 @@ const StickyNote = new Lang.Class({
 						 { opacity: (enter ? 200 : 20),
 						   time: 0.1,
 						   transition: 'easeOutQuad' });
-		if (enter) {
+		if (!enter) {
 			global.stage.set_key_focus(null);
 		}
 	},
