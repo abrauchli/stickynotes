@@ -1,3 +1,10 @@
+.note-icon {
+	height: 20px;
+	width: 20px;
+	padding: 0px;
+	border: 1px solid rgba(128, 128, 128, 0.4);
+	border-radius: 2px;
+}
 .note {
 	border: solid 3px black;
 	background-color: rgba(236,248,51,0.9); /* #ECF833 * 0.9 */

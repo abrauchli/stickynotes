@@ -16,21 +16,18 @@ function init() {
 }
 
 function enable() {
-	var a11yIcon = null;
-	// new St.Icon({ icon_type: St.IconType.FULLCOLOR, icon_size: pxheight, icon_name: ‘[icon name, without file extension]‘ });
-	Main.overview._viewSelector.addViewTab(VIEW_TAB_ID, "Sticky notes", stickyNotesManager.paneActor, a11yIcon);
+
+	stickyNotesManager._noteIcon = new St.Icon({icon_size: /*Main.panel._rightBox.get_height() - 2*/ 16,
+												icon_name: 'view-refresh-symbolic',
+												reactive: true,
+												/*style_class: 'note-icon'*/ });
+	stickyNotesManager._noteIcon.connect('button-press-event', Lang.bind(stickyNotesManager, stickyNotesManager.toggleShowNotes));
+
+	Main.panel._rightBox.add(stickyNotesManager._noteIcon, { y_fill: true });
 }
 
 function disable() {
-	var i = 0,
-		tabs = Main.overview._viewSelector._tabs;
-
-	for (i = 0; i < tabs.length; ++i) {
-		if (_tabs[i].id === VIEW_TAB_ID) {
-			Main.overview._viewSelector._tabs.splice(i, 1);
-			break;
-		}
-	}
+	Main.panel._rightBox.remove_actor(stickyNotesManager._noteIcon);
 }
 
 const StickyNote = new Lang.Class({
@@ -217,14 +214,18 @@ const StickyNotesManager = new Lang.Class({
 	Name: 'StickyNotesManager',
 
 	_init: function() {
+		this._noteIcon = null;
+		this.notesHidden = true;
 		let layoutManager = new Clutter.BinLayout({
 			x_align: Clutter.BinAlignment.FIXED,
 			y_align: Clutter.BinAlignment.FIXED
 		});
 		this.paneActor = new Clutter.Actor({
 			//layout_manager: layoutManager,
-			//reactive: true
+			//reactive: true,
+			opacity: 0
 		});
+		Main.uiGroup.add_actor(this.paneActor);
 
 		this.notes = [];
 		this.pos_x = 20;
@@ -241,8 +242,14 @@ const StickyNotesManager = new Lang.Class({
 		this.createNote();
 	},
 
+	toggleShowNotes: function() {
+		Tweener.addTween(this.paneActor,
+						 { opacity: (this.notesHidden ? 255 : 0),
+						   time: 0.1,
+						   transition: 'easeOutQuad' });
+		this.notesHidden = !this.notesHidden;
+	},
 	addNote: function(note) {
-		//Main.uiGroup.add_actor(note.widget); // add directly to screen
 		this.paneActor.add_actor(note.widget);
 		note.show();
 	},
