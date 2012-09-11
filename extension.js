@@ -44,14 +44,14 @@ const StickyNote = new Lang.Class({
 		this.font = null;
 		this.fontColor = null;
 		this.color = null;
-		this.widget = null;
+		this.actor = null;
 		this._btnClose = null;
 		this._fontDescription = null;
 		this._titleActor = null;
 		this._noteActor = null;
 		this._noteFrameActor = null;
 
-		this.widget = new Clutter.Actor({
+		this.actor = new Clutter.Actor({
 			layout_manager: new Clutter.BinLayout({
 				x_align: Clutter.BinAlignment.START,
 				y_align: Clutter.BinAlignment.START
@@ -62,7 +62,7 @@ const StickyNote = new Lang.Class({
 			height: this.size.height
 		});
 		if (this.position) {
-			this.widget.position = position;
+			this.actor.position = position;
 		}
 
 		let titleFontDescription = new Pango.FontDescription();
@@ -122,10 +122,10 @@ const StickyNote = new Lang.Class({
 
 		// This doesn't work unfortunately
 		// let dragAction = new Clutter.DragAction();
-		// this.widget.add_action(dragAction);
+		// this.actor.add_action(dragAction);
 
-		this.widget.connect('button-press-event', Lang.bind(this, this._startDrag));
-		this.widget.connect('button-release-event', Lang.bind(this, this._endDrag));
+		this.actor.connect('button-press-event', Lang.bind(this, this._startDrag));
+		this.actor.connect('button-release-event', Lang.bind(this, this._endDrag));
 
 		// Resizing the note
 
@@ -142,37 +142,37 @@ const StickyNote = new Lang.Class({
 			source: this._noteFrameActor
 		}));
 
-		this.widget.add_actor(this._noteFrameActor);
-		this.widget.add_actor(this._btnClose);
-		this.widget.add_actor(resizeHandleActor);
+		this.actor.add_actor(this._noteFrameActor);
+		this.actor.add_actor(this._btnClose);
+		this.actor.add_actor(resizeHandleActor);
 
 		// Highlight the close button
 
-		this.widget.connect('enter-event', Lang.bind(this, this._enterLeaveEvent));
-		this.widget.connect('leave-event', Lang.bind(this, this._enterLeaveEvent));
+		this.actor.connect('enter-event', Lang.bind(this, this._enterLeaveEvent));
+		this.actor.connect('leave-event', Lang.bind(this, this._enterLeaveEvent));
 
 	},
 	_startDrag: function(actor, evt) {
 		let [x, y] = evt.get_coords();
-		let [res, nx, ny] = this.widget.transform_stage_point(x, y);
+		let [res, nx, ny] = this.actor.transform_stage_point(x, y);
 		this._drag_orig = {x: nx, y: ny };
-		this._handlerId = this.widget.connect('motion-event', Lang.bind(this, this._drag));
+		this._handlerId = this.actor.connect('motion-event', Lang.bind(this, this._drag));
 		return true;
 	},
 	_drag: function(actor, evt) {
 		let [x, y] = evt.get_coords();
-		let [res, nx, ny] = this.widget.transform_stage_point(x, y);
+		let [res, nx, ny] = this.actor.transform_stage_point(x, y);
 		if (!this._drag_orig) {
 			return false;
 		}
-		this.widget.move_by(nx - this._drag_orig.x, ny - this._drag_orig.y);
+		this.actor.move_by(nx - this._drag_orig.x, ny - this._drag_orig.y);
 		return true;
 	},
 	_endDrag: function(actor, evt) {
 		if (!this._drag_orig) {
 			return false;
 		}
-		this.widget.disconnect(this._handlerId);
+		this.actor.disconnect(this._handlerId);
 		delete this._handlerId;
 		delete this._drag_orig;
 		return true;
@@ -197,20 +197,20 @@ const StickyNote = new Lang.Class({
 	},
 
 	setPosition: function(x, y) {
-		this.widget.set_position(x, y);
+		this.actor.set_position(x, y);
 	},
 	destroy: function() {
 		this.hide();
 		// TODO: remove data and inform the manager
 	},
 	show: function() {
-		Tweener.addTween(this.widget,
+		Tweener.addTween(this.actor,
 						 { opacity: 255,
 						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad' });
 	},
 	hide: function(cb) {
-		Tweener.addTween(this.widget,
+		Tweener.addTween(this.actor,
 						 { opacity: 0,
 						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad',
@@ -226,6 +226,7 @@ const StickyNotesManager = new Lang.Class({
 		this._noteIcon = null;
 		this.notes = [];
 		this.notesHidden = true;
+		this.actor = null;
 		this.pos_x = 20;
 
 		this._lightbox = new Lightbox.Lightbox(global.window_group,
@@ -239,13 +240,13 @@ const StickyNotesManager = new Lang.Class({
 			x_align: Clutter.BinAlignment.FIXED,
 			y_align: Clutter.BinAlignment.FIXED
 		});
-		this.paneActor = new Clutter.Actor({
+		this.actor = new Clutter.Actor({
 			//layout_manager: layoutManager,
 			//reactive: true,
 			opacity: 0
 		});
-		Main.uiGroup.add_actor(this.paneActor);
 
+		// TODO: remove and always have one empty note (like GS default virtual desktop configuration)
 		let btnAdd = new St.Button({
 			label: '+',
 			z_position: 1,
@@ -253,13 +254,15 @@ const StickyNotesManager = new Lang.Class({
 			y: 10
 		});
 		btnAdd.connect('clicked', Lang.bind(this, this.createNote));
-		this.paneActor.add_actor(btnAdd);
+		this.actor.add_actor(btnAdd);
 
 		this.createNote();
+
+		Main.uiGroup.add_actor(this.actor);
 	},
 
 	toggleShowNotes: function() {
-		Tweener.addTween(this.paneActor,
+		Tweener.addTween(this.actor,
 						 { opacity: (this.notesHidden ? 255 : 0),
 						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad' });
@@ -271,14 +274,14 @@ const StickyNotesManager = new Lang.Class({
 		this.notesHidden = !this.notesHidden;
 	},
 	addNote: function(note) {
-		this.paneActor.add_actor(note.widget);
+		this.actor.add_actor(note.actor);
 		note.show();
 	},
 	removeNote: function(note) {
-		note.hide(
-			Lang.bind(this,
-				function() { this.paneActor.remove_actor(note.widget); })
-		);
+		note.hide(Lang.bind(this, function() {
+			this.actor.remove_actor(note.actor);
+			this._grabHelper.removeActor(note.actor);
+		}));
 	},
 	createNote: function() {
 		let note = new StickyNote();
