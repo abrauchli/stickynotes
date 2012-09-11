@@ -5,6 +5,7 @@ const St = imports.gi.St;
 const Pango = imports.gi.Pango;
 
 const Main = imports.ui.main;
+const Lightbox = imports.ui.lightbox;
 const Tweener = imports.ui.tweener;
 
 const VIEW_TAB_ID = 'stickynotes';
@@ -227,6 +228,13 @@ const StickyNotesManager = new Lang.Class({
 		this.notesHidden = true;
 		this.pos_x = 20;
 
+		this._lightbox = new Lightbox.Lightbox(global.window_group,
+											   { inhibitEvents: true,
+												 fadeInTime: ANIMATION_TIME,
+												 fadeOutTime: ANIMATION_TIME,
+												 fadeFactor: 0.2
+											   });
+
 		let layoutManager = new Clutter.BinLayout({
 			x_align: Clutter.BinAlignment.FIXED,
 			y_align: Clutter.BinAlignment.FIXED
@@ -255,6 +263,11 @@ const StickyNotesManager = new Lang.Class({
 						 { opacity: (this.notesHidden ? 255 : 0),
 						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad' });
+		if (this.notesHidden) {
+			this._lightbox.show();
+		} else {
+			this._lightbox.hide();
+		}
 		this.notesHidden = !this.notesHidden;
 	},
 	addNote: function(note) {
