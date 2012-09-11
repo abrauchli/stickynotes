@@ -5,6 +5,7 @@ const St = imports.gi.St;
 const Pango = imports.gi.Pango;
 
 const Main = imports.ui.main;
+const GrabHelper = imports.ui.grabHelper;
 const Lightbox = imports.ui.lightbox;
 const Tweener = imports.ui.tweener;
 
@@ -222,6 +223,7 @@ const StickyNotesManager = new Lang.Class({
 	Name: 'StickyNotesManager',
 
 	_init: function() {
+		this._grabHelper = null;
 		this._lightbox = null;
 		this._noteIcon = null;
 		this.notes = [];
@@ -254,6 +256,13 @@ const StickyNotesManager = new Lang.Class({
 			size: pageSize,
 			y: Main.layoutManager.panelBox.height
 		});
+		this.actor.connect('button-press-event', Lang.bind(this, function(actor, evt) {
+			this.toggleShowNotes();
+			return true;
+		}));
+
+		this._grabHelper = new GrabHelper.GrabHelper(this.actor);
+		this._grabHelper.addActor(this.actor);
 
 		// TODO: remove and always have one empty note (like GS default virtual desktop configuration)
 		let btnAdd = new St.Button({
@@ -279,13 +288,22 @@ const StickyNotesManager = new Lang.Class({
 			// Should we want to move away the windows first..
 			// Main.overview.fadeInDesktop(); // use fadeOutDesktop to get windows back
 
+			if (!this._grabHelper.grab({ actor: this.actor,
+										 modal: true,
+										 untracked: true,
+										 // grabFocus: true,
+										 onUngrab: Lang.bind(this, this.toggleShowNotes) })) {
+				return;
+			}
 			this._lightbox.show();
 		} else {
+			this._grabHelper.ungrab({ actor: this.actor }); // causes call of toggle because of onUngrab?
 			this._lightbox.hide();
 		}
 		this.notesHidden = !this.notesHidden;
 	},
 	addNote: function(note) {
+		this._grabHelper.addActor(note.actor);
 		this.actor.add_actor(note.actor);
 		note.show();
 	},
