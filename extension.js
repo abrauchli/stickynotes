@@ -240,10 +240,19 @@ const StickyNotesManager = new Lang.Class({
 			x_align: Clutter.BinAlignment.FIXED,
 			y_align: Clutter.BinAlignment.FIXED
 		});
+		let monitor = Main.layoutManager.currentMonitor;
+		let pageSize = new Clutter.Size({
+			width: monitor.width,
+			height: monitor.height - Main.layoutManager.panelBox.height
+		});
+
 		this.actor = new Clutter.Actor({
 			//layout_manager: layoutManager,
 			//reactive: true,
-			opacity: 0
+			background_color: new Clutter.Color({ red: 0, green: 0, blue: 255, alpha: 100 }),
+			opacity: 0,
+			size: pageSize,
+			y: Main.layoutManager.panelBox.height
 		});
 
 		// TODO: remove and always have one empty note (like GS default virtual desktop configuration)
@@ -267,6 +276,9 @@ const StickyNotesManager = new Lang.Class({
 						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad' });
 		if (this.notesHidden) {
+			// Should we want to move away the windows first..
+			// Main.overview.fadeInDesktop(); // use fadeOutDesktop to get windows back
+
 			this._lightbox.show();
 		} else {
 			this._lightbox.hide();
