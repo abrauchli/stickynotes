@@ -8,6 +8,7 @@ const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
 
 const VIEW_TAB_ID = 'stickynotes';
+const ANIMATION_TIME = 0.2; // sec
 
 let stickyNotesManager;
 
@@ -179,7 +180,7 @@ const StickyNote = new Lang.Class({
 		let enter = evt.type() === Clutter.EventType.ENTER;
 		Tweener.addTween(this._btnClose,
 						 { opacity: (enter ? 200 : 20),
-						   time: 0.1,
+						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad' });
 		if (!enter) {
 			global.stage.set_key_focus(null);
@@ -204,13 +205,13 @@ const StickyNote = new Lang.Class({
 	show: function() {
 		Tweener.addTween(this.widget,
 						 { opacity: 255,
-						   time: 0.1,
+						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad' });
 	},
 	hide: function(cb) {
 		Tweener.addTween(this.widget,
 						 { opacity: 0,
-						   time: 0.1,
+						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad',
 						   onComplete: cb });
 	}
@@ -252,7 +253,7 @@ const StickyNotesManager = new Lang.Class({
 	toggleShowNotes: function() {
 		Tweener.addTween(this.paneActor,
 						 { opacity: (this.notesHidden ? 255 : 0),
-						   time: 0.1,
+						   time: ANIMATION_TIME,
 						   transition: 'easeOutQuad' });
 		this.notesHidden = !this.notesHidden;
 	},
