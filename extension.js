@@ -42,6 +42,12 @@ const StickyNote = new Lang.Class({
 		this.font = null;
 		this.fontColor = null;
 		this.color = null;
+		this.widget = null;
+		this._btnClose = null;
+		this._fontDescription = null;
+		this._titleActor = null;
+		this._noteActor = null;
+		this._noteFrameActor = null;
 
 		this.widget = new Clutter.Actor({
 			layout_manager: new Clutter.BinLayout({
@@ -214,8 +220,12 @@ const StickyNotesManager = new Lang.Class({
 	Name: 'StickyNotesManager',
 
 	_init: function() {
+		this._lightbox = null;
 		this._noteIcon = null;
+		this.notes = [];
 		this.notesHidden = true;
+		this.pos_x = 20;
+
 		let layoutManager = new Clutter.BinLayout({
 			x_align: Clutter.BinAlignment.FIXED,
 			y_align: Clutter.BinAlignment.FIXED
@@ -226,9 +236,6 @@ const StickyNotesManager = new Lang.Class({
 			opacity: 0
 		});
 		Main.uiGroup.add_actor(this.paneActor);
-
-		this.notes = [];
-		this.pos_x = 20;
 
 		let btnAdd = new St.Button({
 			label: '+',
