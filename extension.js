@@ -7,9 +7,10 @@ const Pango = imports.gi.Pango;
 const Main = imports.ui.main;
 const GrabHelper = imports.ui.grabHelper;
 const Lightbox = imports.ui.lightbox;
+const PanelMenu = imports.ui.panelMenu;
 const Tweener = imports.ui.tweener;
 
-const VIEW_TAB_ID = 'stickynotes';
+const APP_ROLE = 'stickynotes';
 const ANIMATION_TIME = 0.2; // sec
 
 let stickyNotesManager;
@@ -19,18 +20,15 @@ function init() {
 }
 
 function enable() {
+	stickyNotesManager.panelButton = new PanelMenu.SystemStatusButton('view-refresh', 'Sticky Notes');
+	stickyNotesManager.panelButton.connect('button-press-event', Lang.bind(stickyNotesManager, stickyNotesManager.toggleShowNotes));
 
-	stickyNotesManager._noteIcon = new St.Icon({icon_size: /*Main.panel._rightBox.get_height() - 2*/ 16,
-												icon_name: 'view-refresh-symbolic',
-												reactive: true,
-												/*style_class: 'note-icon'*/ });
-	stickyNotesManager._noteIcon.connect('button-press-event', Lang.bind(stickyNotesManager, stickyNotesManager.toggleShowNotes));
-
-	Main.panel._rightBox.add(stickyNotesManager._noteIcon, { y_fill: true });
+	Main.panel.addToStatusArea(APP_ROLE, stickyNotesManager.panelButton);
 }
 
 function disable() {
-	Main.panel._rightBox.remove_actor(stickyNotesManager._noteIcon);
+	stickyNotesManager.panelButton.destroy();
+	stickyNotesManager.panelButton = null;
 }
 
 const StickyNote = new Lang.Class({
@@ -225,10 +223,10 @@ const StickyNotesManager = new Lang.Class({
 	_init: function() {
 		this._grabHelper = null;
 		this._lightbox = null;
-		this._noteIcon = null;
 		this.notes = [];
 		this.notesHidden = true;
 		this.actor = null;
+		this.panelButton = null;
 		this.pos_x = 20;
 
 		this._lightbox = new Lightbox.Lightbox(global.window_group,
@@ -290,7 +288,7 @@ const StickyNotesManager = new Lang.Class({
 
 			if (!this._grabHelper.grab({ actor: this.actor,
 										 modal: true,
-										 untracked: true,
+										 // untracked: true,
 										 // grabFocus: true,
 										 onUngrab: Lang.bind(this, this.toggleShowNotes) })) {
 				return;
